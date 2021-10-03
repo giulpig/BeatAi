@@ -113,6 +113,8 @@ var pTop = parseInt(gameDiv.style.paddingTop.substring(0,numbs))
 var xImg
 var yImg
 
+var exBall = false
+
 var playerPlaced = false
 var attemptCounter = 0
 
@@ -284,6 +286,7 @@ function drawMap() {
                     switch(mode) {
                         case modes.DEFAULT:
                         case modes.CREATE:
+                        case modes.BALLS_SHOWING:
                             if (player !== null)
                                 ctx.drawImage(images.get('player'), player.nColumn * sideSquare, player.nRow * sideSquare, sideSquare, sideSquare)
                             break
@@ -382,7 +385,7 @@ function draw() {
     
     drawMap()
 
-    if (selectedItem != "" && selectedItem != "modifier" && xImg !== null && yImg !== null)
+    if (selectedItem != "" && selectedItem != "modifier" && selectedItem != "modifierJustInseredBall" && xImg !== null && yImg !== null)
         ctx.drawImage(images.get(selectedItem), xImg, yImg, sideSquare, sideSquare)
 
 }
@@ -477,21 +480,29 @@ addEventListener('mousedown', event => {
     //add the item to the map if is possible
     if (event.clientX > pLeft && event.clientX < (pLeft + canvas.width)) {
         if (event.clientY > (pTop + navsContainer.clientHeight) && event.clientY < (pTop + navsContainer.clientHeight + canvas.height)){
-            if (selectedItem != "")
+            if (selectedItem != ""){
                 mouseDown = true
+            console.log("iN HERE")
+            }
         }
     }
 })
 
 addEventListener('mouseup', event => {
-        if (selectedItem != ""){
-            mouseDown = false
+    if (selectedItem != ""){
+        mouseDown = false
+        console.log("OUT HERE")
     }
-
 })
 
+//Una soluzioni potrebbe essere andare a scorrere i tag e SE ho clicclato sull'interdo DIV, quindi il blocco crosso 
+//che tiene tutto potrei andare  a dire di salvare le nuove x - y
+
 addEventListener('click', event => {
-    if (event.clientX > pLeft && event.clientX < (pLeft + canvas.width)) {
+
+    console.log("CLICK: " + event.target.classList[0])
+
+    if (event.target.classList[0] !== "arrows" && event.target.classList[0] !== "gameDiv" && event.clientX > pLeft && event.clientX < (pLeft + canvas.width)) {
         if (event.clientY > (pTop + navsContainer.clientHeight) && event.clientY < (pTop + navsContainer.clientHeight + canvas.height)){
             if (selectedItem != "")
                 if(selectedItem == "modifier")
@@ -499,22 +510,22 @@ addEventListener('click', event => {
                 else    
                     positioning(event.clientX, event.clientY) 
         }
+    } else if (event.target.classList[0] === "arrows") {
+        paddings = getPaddingsLeftTop()
+        setxyImg(event.clientX, event.clientY, paddings[0], paddings[1])
     }
 })
 
 addEventListener('mousemove', (event) => {
 
-    if (selectedItem != "" && selectedItem != "modifier") {
-        numbs = gameDiv.style.paddingLeft.length
-        pLeft = parseInt(gameDiv.style.paddingLeft.substring(0,numbs))
-        numbs = gameDiv.style.paddingTop.length
-        pTop = parseInt(gameDiv.style.paddingTop.substring(0,numbs))
+    if (event.target.classList[0] !== "arrows" && selectedItem != "" && selectedItem != "modifier") {
+        paddings = getPaddingsLeftTop()
+        pLeft = paddings[0]
+        pTop = paddings[1]
 
         if (event.clientX > pLeft && event.clientX < (pLeft + canvas.width)) {
             if (event.clientY > (pTop + navsContainer.clientHeight) && event.clientY < (pTop + navsContainer.clientHeight + canvas.height)){
-                xImg = event.clientX - pLeft - (sideSquare/2)
-                yImg = event.clientY - navsContainer.clientHeight - pTop - (sideSquare/2)
-
+                setxyImg(event.clientX, event.clientY, pLeft, pTop)
                 if (mouseDown){
                     positioning(event.clientX, event.clientY)
                 }
@@ -528,6 +539,23 @@ addEventListener('mousemove', (event) => {
         }
     }
 })
+
+function getPaddingsLeftTop() {
+    numbs = gameDiv.style.paddingLeft.length
+    pLeft = parseInt(gameDiv.style.paddingLeft.substring(0,numbs))
+    numbs = gameDiv.style.paddingTop.length
+    pTop = parseInt(gameDiv.style.paddingTop.substring(0,numbs))
+    
+    a = [pLeft, pTop]
+
+    return a
+}
+
+function setxyImg(x, y, pLeft, pTop) {
+    xImg = x - pLeft - (sideSquare/2)
+    yImg = y - navsContainer.clientHeight - pTop - (sideSquare/2)
+}
+
 
 function positioning(clientX, clientY) {
     x = clientX - pLeft
@@ -569,6 +597,12 @@ function positioning(clientX, clientY) {
                 map[nRow][nColumn] = 4
                 var ball = new Ball(nRow, nColumn)
                 balls.push(ball)
+                
+                
+                selectedItem = 'modifierJustInseredBall'
+                exBall = true
+                modifing(clientX, clientY)
+                
             }
         break
         
@@ -672,6 +706,11 @@ function disableModifier() {
         modPanelBall.style.left = "0px"
         modPanelBall.style.display = "none"
         selectedBall = null
+        
+        if(exBall){
+            selectedItem = 'ball'
+            exBall = false
+        }
     }
 }
 
@@ -792,6 +831,7 @@ function endCreateLevel() {
     selectedItem = ""
     xImg = null
     yImg = null
+    disableModifier()
     canvas.style.cursor = "default"
 }
 
@@ -2672,3 +2712,7 @@ function requestGeneration() {
         }
     })
 }
+
+window.addEventListener("beforeunload", function(event) { 
+    endComunicationAi()
+});
