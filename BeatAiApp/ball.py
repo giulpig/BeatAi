@@ -107,3 +107,6 @@ class Ball:
                     self.y = self.height - self.sideSquare
                     self.side = "up"
                     return
+    
+    def __str__(self):
+        return 'x: ' + str(self.x) + ' y: ' + str(self.y) + ' side: ' + str(self.side); 
